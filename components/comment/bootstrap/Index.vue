@@ -52,8 +52,10 @@
 
     props: {
       topLevel: { type: Boolean, default: true },
-      comments: { type: Array, required: true },
-      modelData: { type: Object, required: true },
+      comments: { type: Array, default() { return []; } },
+      url: { type: String, required: true },
+      modelId: { type: Number, required: true },
+      modelClass: { type: String, required: true },
     },
 
     computed: {
@@ -79,6 +81,20 @@
           return item === commentId;
         });
         this.deletedCommentsIds.splice(index, 1);
+      },
+
+      loadComments(page) {
+        this.$root.smartAjax__call({
+          callingObject: this,
+          method: 'get',
+          url: this.url,
+          params: {
+            page: page,
+            commentableId: this.modelId,
+            commentableType: this.modelClass,
+            lang: this.$root.DataLang.currLang
+          },
+        });
       }
     },
 
@@ -86,6 +102,10 @@
       this.localComments = [];
       this.deletedCommentsIds = [];
       this.$on('commentDeletedError', this.commentDeletedErrorHandler);
+    },
+
+    mounted() {
+      this.loadComments(1);
     }
   };
 </script>

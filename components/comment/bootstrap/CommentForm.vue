@@ -4,22 +4,9 @@
       <img :src="$root.DataUser.avatar"/>
     </div>
     <div class="dx-comments__body">
-      <textarea
-          class="dx-comments__form-text"
-          rows="3"
-          :label="t('formLabel')"
-          v-model="commentText"
-      ></textarea>
-      <button
-          @click="commentStore" :loading="loading" color="blue-grey"
-          class="dx-comments__form-button">
-        {{ t('buttonPost') }}
-      </button>
-      <button v-if="showCloseButton"
-          @click="closeForm" :disabled="loading"
-          class="dx-comments__form-button">
-        {{ t('buttonClose') }}
-      </button>
+      <textarea class="form-control" rows="3" :label="t('formLabel')" v-model="commentText"></textarea>
+      <button type="button" @click="commentStore" :loading="loading" class="btn btn-sm btn-dark mt-1">{{ t('buttonPost') }}</button>
+      <button type="button" v-if="showCloseButton" @click="closeForm" :disabled="loading" class="btn btn-sm btn-light mt-1">{{ t('buttonClose') }}</button>
     </div>
   </div>
 </template>

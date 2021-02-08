@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="dx-comments">
         <div v-if="showEmptyText">
             <p class="subheading mb-0">
 <!--                <v-icon>mdi-comment-text-multiple-outline</v-icon>-->
@@ -7,7 +7,7 @@
             </p>
         </div>
         <div v-if="topLevel" class="pb-0">
-            <comment-form v-if="$root.auth__loggedIn" @commentStored="commentStoredHandler" :commentable-id="modelData.id" :commentable-type="modelData.class"></comment-form>
+            <comment-form v-if="$root.auth__loggedIn" @commentStored="commentStoredHandler" :commentable-id="modelId" :commentable-type="modelClass"></comment-form>
             <comment-sign-in v-else></comment-sign-in>
         </div>
         <template v-for="comment in finalComments">
@@ -109,3 +109,54 @@
     }
   };
 </script>
+
+<style lang="scss">
+$dxCommentsPhotoWidth: 120px;
+
+.dx-comments {
+  .dx-comments__photo {
+    float: left;
+    width: $dxCommentsPhotoWidth;
+
+    img {
+      width: $dxCommentsPhotoWidth;
+      height: $dxCommentsPhotoWidth;
+    }
+  }
+
+  .dx-comments__body {
+    margin-left: $dxCommentsPhotoWidth + 20px;
+  }
+
+  .dx-comments__form-text {
+    padding-top: 0;
+
+    label {
+      top: 13px !important;
+    }
+
+    div.input-group__input {
+      border: 1px solid #c0c0c0 !important;
+    }
+  }
+
+  .dx-comments__text {
+    color: rgba(0,0,0,.87);
+  }
+
+  .dx-comments__button {
+    cursor: pointer;
+
+    .dx-comments__button-icon {
+      font-size: 12px;
+      vertical-align: baseline;
+    }
+  }
+
+  .dx-comments__form-button {
+    height: 24px;
+    font-size: 12px;
+    margin-left: 0;
+  }
+}
+</style>

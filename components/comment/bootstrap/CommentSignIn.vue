@@ -1,8 +1,6 @@
 <template>
   <p class="subheading">
-<!--    <router-link :to="{ name: 'login'}" class="dx-router-link">-->
-<!--      {{ t('enterLabel') }}-->
-<!--    </router-link>-->
+    <a :href="urlLogin">{{ t('enterLabel')}}</a>
     <i class="bi-box-arrow-in-right" style="vertical-align: top;"></i>
   </p>
 </template>
@@ -20,6 +18,10 @@
           default: 'app.components.dxComments',
         },
       };
+    },
+
+    props: {
+      urlLogin: { type: String, required: true },
     },
   };
 </script>

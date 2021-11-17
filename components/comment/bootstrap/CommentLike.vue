@@ -1,12 +1,7 @@
 <template>
-  <span>
-    <button
-        :disabled="!likesEnabled"
-        class="ma-0"
-        @click="likeIt">
-      <i class="bi-hand-thumbs-up" style="font-size: 12px;"></i>
-    </button>
-    <span>{{ cnt }}</span>
+  <span :disabled="!likesEnabled" style="cursor: pointer;" @click="likeIt">
+    <i class="bi-hand-thumbs-up" style="font-size: 12px;"></i>
+    <span style="vertical-align: middle;">{{ cnt }}</span>
   </span>
 </template>
 

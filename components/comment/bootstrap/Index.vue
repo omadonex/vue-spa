@@ -1,32 +1,42 @@
 <template>
-    <div class="dx-comments">
-        <div v-if="showEmptyText">
-            <p class="subheading mb-0">
-<!--                <v-icon>mdi-comment-text-multiple-outline</v-icon>-->
-                {{ t('emptyLabel') }}
-            </p>
-        </div>
-        <div v-if="topLevel" class="pb-0">
-            <comment-form v-if="$root.auth__loggedIn" @commentStored="commentStoredHandler" :commentable-id="modelId" :commentable-type="modelClass"></comment-form>
-            <comment-sign-in v-else></comment-sign-in>
-        </div>
-        <template v-for="comment in finalComments">
-            <div :key="'comment_' + comment.id" v-if="deletedCommentsIds.indexOf(comment.id) === -1">
-                <div>
-                    <div d-flex class="pb-0">
-                        <comment-comment
-                            :comment-data="comment"
-                            @commentDeleted="commentDeletedHandler"
-                            @commentDeletedError="commentDeletedErrorHandler">
-                        </comment-comment>
-                    </div>
-                    <div v-if="comment.comments.length > 0" style="margin-left: 100px;">
-                        <comment :comments="comment.comments" :model-data="comment" :top-level="false"></comment>
-                    </div>
-                </div>
-            </div>
-        </template>
+  <div class="dx-comments">
+
+    <!-- Нет комментариев, label-напоминалка, что нужно оставить комментарий -->
+    <div v-if="!isCommentsExists" class="mt-3">
+      <i class="bi-chat-text" style="vertical-align: top;"></i>
+      {{ t('emptyLabel') }}
     </div>
+
+    <!-- Форма для оставления комментариев, либо ссылка на вход, если пользователь не аутентифицирован -->
+    <div class="mt-3">
+      <comment-form v-if="$root.auth__loggedIn"
+                    @commentStored="commentStoredHandler"
+                    :url-store="urlStore"
+                    :commentable-id="modelId"
+                    :commentable-type="modelClass"></comment-form>
+      <comment-sign-in :url-login="urlLogin" v-else></comment-sign-in>
+    </div>
+
+    <!-- Блок комментариев -->
+    <div v-if="isCommentsExists" class="mt-5">
+      <template v-for="comment in commentList">
+        <div v-if="deletedCommentsIds.indexOf(comment.id) === -1" class="mt-3" :key="'comment_' + comment.id">
+          <comment-comment :url-login="urlLogin"
+                           :comment-data="comment">
+                    <!--                            @commentDeleted="commentDeletedHandler"-->
+                    <!--                            @commentDeletedError="commentDeletedErrorHandler">-->
+          </comment-comment>
+          <div v-if="comment.comments.length > 0" style="margin-left: 100px;">
+            <comment :inner-comment-list="comment.comments" :model-data="comment" :top-level="false"></comment>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Спиннер подгрузки комментариев -->
+    <div v-show="loading" class="mt-3 spinner-grow" role="status"></div>
+
+  </div>
 </template>
 
 <script>
@@ -45,67 +55,113 @@
         translate__ns: {
           default: 'app.components.dxComments',
         },
-        localComments: [],
+        loading: false,
+        initialized: false,
+        nextPage: 1,
+        loadedCommentList: [],
+        newCommentList: [],
+        scrolledToBottom: false,
+
         deletedCommentsIds: [],
       };
     },
 
     props: {
-      topLevel: { type: Boolean, default: true },
-      comments: { type: Array, default() { return []; } },
-      url: { type: String, required: true },
+      urlLogin: { type: String, required: true },
+      urlLoad: { type: String, required: true },
+      urlStore: { type: String, required: true },
       modelId: { type: Number, required: true },
       modelClass: { type: String, required: true },
+      timeFreeze: { type: Number, default: 15 },
+      timeEdit: { type: Number, default: 1440 },
     },
 
     computed: {
-      finalComments() {
-          return this.localComments.concat(this.comments);
+      commentList() {
+        return this.newCommentList.concat(this.loadedCommentList);
       },
-      showEmptyText() {
-        return this.topLevel && (this.finalComments.length === 0);
+
+      isCommentsExists() {
+        return this.commentList.length !== 0;
+      },
+    },
+
+    watch: {
+      scrolledToBottom(value) {
+        if (this.initialized && value) {
+          this.loadComments();
+        }
       }
     },
 
     methods: {
+      windowScrollHandler(event) {
+        let d = event.path[0];
+        let w = event.path[1];
+        this.scrolledToBottom = Math.max(w.pageYOffset, d.documentElement.scrollTop, d.body.scrollTop) + w.innerHeight === d.documentElement.offsetHeight
+      },
+
       commentStoredHandler(data) {
-        this.localComments.unshift(data);
+        this.newCommentList.unshift(data);
       },
+      //
+      // commentDeletedHandler(commentId) {
+      //   this.deletedCommentsIds.push(commentId);
+      // },
+      //
+      // commentDeletedErrorHandler(commentId) {
+      //   let index = this.deletedCommentsIds.findIndex((item, i, arr) => {
+      //     return item === commentId;
+      //   });
+      //   this.deletedCommentsIds.splice(index, 1);
+      // },
 
-      commentDeletedHandler(commentId) {
-        this.deletedCommentsIds.push(commentId);
-      },
+      loadComments() {
+        if (this.nextPage !== 0) {
+          return this.$root.smartAjax__call({
+            callingObject: this,
+            method: 'get',
+            url: this.urlLoad,
+            params: {
+              page: this.nextPage,
+              commentableId: this.modelId,
+              commentableType: this.modelClass,
+              lang: this.$root.DataLang.currLang
+            },
+          })
+              .then((result) => {
+                if (result.data.length > 0) {
+                  this.loadedCommentList = this.loadedCommentList.concat(result.data);
+                }
 
-      commentDeletedErrorHandler(commentId) {
-        let index = this.deletedCommentsIds.findIndex((item, i, arr) => {
-          return item === commentId;
-        });
-        this.deletedCommentsIds.splice(index, 1);
-      },
+                if (result.data.length < result.meta.per_page) {
+                  this.nextPage = 0;
+                } else {
+                  this.nextPage = Math.floor(this.commentList.length / result.meta.per_page) + 1;
+                }
 
-      loadComments(page) {
-        this.$root.smartAjax__call({
-          callingObject: this,
-          method: 'get',
-          url: this.url,
-          params: {
-            page: page,
-            commentableId: this.modelId,
-            commentableType: this.modelClass,
-            lang: this.$root.DataLang.currLang
-          },
-        });
+                return result;
+              });
+        }
+
+        return null;
       }
     },
 
     created() {
-      this.localComments = [];
-      this.deletedCommentsIds = [];
-      this.$on('commentDeletedError', this.commentDeletedErrorHandler);
+      window.addEventListener('scroll', this.windowScrollHandler);
+      // this.deletedCommentsIds = [];
+      // this.$on('commentDeletedError', this.commentDeletedErrorHandler);
+    },
+
+    destroyed () {
+      window.removeEventListener('scroll', this.windowScrollHandler);
     },
 
     mounted() {
-      this.loadComments(1);
+      this.loadComments().then((result) => {
+        this.initialized = true;
+      });
     }
   };
 </script>

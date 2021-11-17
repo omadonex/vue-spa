@@ -6,20 +6,18 @@ export default {
   },
 
   methods: {
-    commentIt(commentableId, commentableType, commentText) {
-      const url = this.$root.route('api.v1.content.comment.store').url();
-      const requestParams = {
-        text: commentText,
-        commentableId: commentableId,
-        commentableType: commentableType,
-        lang: this.$root.DataLang.currLang,
-        userId: this.$root.DataUser.id,
-      };
+    commentIt(url, commentableId, commentableType, commentText) {
       return this.$root.smartAjax__call({
         callingObject: this,
         method: 'post',
         url: url,
-        params: requestParams,
+        params: {
+          text: commentText,
+          commentableId: commentableId,
+          commentableType: commentableType,
+          lang: this.$root.DataLang.currLang,
+          userId: this.$root.DataUser.id,
+        },
       })
         .then((result) => {
           if (result) {
